@@ -1,9 +1,18 @@
 #!/bin/bash
 
 repos="vm image"
-allversion="40 50 60 61 70"
+allversion="61 70"
 
-cd "$(dirname "$(readlink -f "$BASH_SOURCE")")"
+if [ "$(uname -s)" = 'Linux' ]; then
+	sedcmd="sed -r"
+	readlinkcmd="readlink -f"
+else
+	echo "Assuming Homebrew with packages installed: gnu-sed coreutils"
+	sedcmd="gsed -r"
+	readlinkcmd="greadlink -f"
+fi
+
+cd "$(dirname "$($readlinkcmd "$BASH_SOURCE")")"
 
 versions="$@"
 if [ "$versions" = "" ]; then
@@ -19,13 +28,10 @@ generated_warning() {
 		#
 	EOH
 }
+
+variants="slim slim64"
 for repo in $repos; do
 	for version in $versions; do
-		if [ $version -le 50 ]; then
-			variants="slim"
-		else
-			variants="slim slim64"
-		fi
 		for variant in $variants; do
 			dir="$repo/$version/$variant"
 			echo $dir
@@ -33,9 +39,9 @@ for repo in $repos; do
 			mkdir -p "$dir"
 			sedStr="
 				s!%%VERSION%%!$version!g;
-			"	
+			"
 			{ generated_warning; cat "$template"; } > "$dir/Dockerfile"
-			sed -r "$sedStr" -i "$dir/Dockerfile"
+			$sedcmd "$sedStr" -i "$dir/Dockerfile"
 		done
 	done
 done

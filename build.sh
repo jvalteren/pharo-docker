@@ -1,33 +1,37 @@
 #!/bin/bash
 repos="vm image"
-allversion="40 50 60 61 70"
+allversion="61 70"
+prefix="pharo-"
+user="jvalteren"
 
-cd "$(dirname "$(readlink -f "$BASH_SOURCE")")"
+if [ "$(uname -s)" = 'Linux' ]; then
+	readlinkcmd="readlink -f"
+else
+	echo "Assuming Homebrew with packages installed: coreutils"
+	readlinkcmd="greadlink -f"
+fi
+
+cd "$(dirname "$($readlinkcmd -f "$BASH_SOURCE")")"
 
 versions="$@"
 if [ "$versions" = "" ]; then
         versions="$allversion"
 fi
 
+default="slim64"
+variants="slim slim64"
 for repo in $repos; do
 	for version in $versions; do
-		default="slim64"
-		if [ $version -le 50 ]; then
-			variants="slim"
-			default="slim"
-		else
-			variants="slim slim64"
-		fi
 		for variant in $variants; do
 			dir="$repo/$version/$variant"
-			tag="$repo:$version-$variant"
+			tag="$prefix$repo:$version-$variant"
 			echo "BUILDING $tag";
 			
-			(cd $dir && docker build -t "pharo/$tag" .)
-			docker push "pharo/$tag"
+			(cd $dir && docker build -t "$user/$tag" .)
+			docker push "$user/$tag"
 			if [ "$variant" = "$default" ]; then
-				docker tag "pharo/$tag" "pharo/$repo:$version"
-				docker push "pharo/$repo:$version"
+				docker tag "$user/$tag" "$user/$prefix$repo:$version"
+				docker push "$user/$prefix$repo:$version"
 			fi
 		done
 	done
